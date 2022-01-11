@@ -1,46 +1,41 @@
-use ndarray::arr2;
+use ndarray::prelude::*;
+
 pub struct Game {
-    payoff_A: arr2,
-    payoff_B: arr2,
-    is_init: bool,
+    pub payoff_a: Array2<i32>,
+    pub payoff_b: Array2<i32>,
+    pub is_init: bool,
 }
 
 impl Game {
-    pub fn load_game(&mut self, payoff_A: arr2, payoff_B: arr2){
+    pub fn init_game(&mut self){
         //here I should check that the dimensions are the same before assignment
-        self.set_payoff_mtx(payoff_A, "payoff_A");
-        self.set_payoff_mtx(payoff_B, "payoff_B");
-
-        self.is_init=1;
+        self.check_dimensions();
+        self.is_init = true;
     }
 
-    fn set_payoff_mtx(&mut self, payoff_mtx: arr2, label: str){
-        //there has to be a better way to write this
-        if label == "payoff_A" {
-            self.payoff_A = payoff_mtx;
-        } else if label == "payoff_B" {
-            self.payoff_B = payoff_mtx;
-        }
+    fn check_dimensions(&mut self) {
+        assert_eq!(self.payoff_a.dim(), self.payoff_b.dim())
     }
 
     //might also want to have an init function to allow moves to be played, ie that all the checks
     //on proper game setup have been performed.
-    
 
-    pub fn get_payoff_mtx(&mut self, label: str) -> arr2{
+    pub fn get_payoff_mtx(&mut self, label: &str) -> Array2<i32>{
         match label {
-            "payoff_A" => self.payoff_A,
-            "payoff_B" => self.payoff_B,
-            _ => panic!("Not a valid payoff matrix. Valid matrices are payoff_A and payoff_B"),
+            "payoff_a" => self.payoff_a.clone(),
+            "payoff_b" => self.payoff_b.clone(),
+            _ => panic!("Not a valid payoff matrix. Valid matrices are payoff_a and payoff_b"),
         }
     }
     
-    pub fn turn_outcome(&mut self, player_A_move: i32, player_B_move: i32) -> (i32, i32) {
-        
-        let a_out = self.payoff_A.slice(s![player_A_move, player_B_move]);
-        let b_out = self.payoff_B.slice(s![player_A_move, player_B_move]);
-
-        (a_out, b_out) 
+    fn check_applied_moves(&mut self, player_a_move: usize, player_b_move: usize){
+        assert!(self.payoff_a.dim().0 > player_a_move);
+        assert!(self.payoff_a.dim().1 > player_b_move);
+    }
+    pub fn turn_outcome(&mut self, player_a_move: usize, player_b_move: usize) -> (i32, i32) {
+        assert!(self.is_init);
+        self.check_applied_moves(player_a_move, player_b_move);
+        (self.payoff_a[[player_a_move, player_b_move]], self.payoff_b[[player_a_move, player_b_move]]) 
     }
 
 }
