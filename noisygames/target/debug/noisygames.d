@@ -1,1 +1,1 @@
-C:\Users\Write\Documents\GitHub\noisygames\noisygames\target\debug\noisygames.exe: C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\game.rs C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\main.rs
+C:\Users\Write\Documents\GitHub\noisygames\noisygames\target\debug\noisygames.exe: C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\game.rs C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\main.rs C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\player.rs C:\Users\Write\Documents\GitHub\noisygames\noisygames\src\testbed.rs
