@@ -1,6 +1,6 @@
 use crate::game::Game;
 use std::clone::Clone;
-//use crate::Strategy;
+use crate::Strategy;
 
 //what are some things that a testbed should have? run
 #[derive(Clone)]
