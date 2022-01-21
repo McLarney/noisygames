@@ -1,15 +1,19 @@
 use crate::game::Game;
 use std::clone::Clone;
+use serde::Serialize;
 //use crate::Strategy;
 
 //what are some things that a testbed should have? run
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct Config<T, U> {
     pub player_a: T,
+    pub player_a_num: usize,
     pub player_b: U,
+    pub player_b_num: usize,
     pub game: Game,
-    pub num_rounds: i32,
-    pub num_instance: i32,
+    pub num_rounds: usize,
+    pub num_round_lengths: Vec<i32>,
+    pub location: String,
 }
 
 //This is to be used for data that might get analyzed after the fact

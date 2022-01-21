@@ -1,6 +1,7 @@
 use std::clone::Clone;
+use serde::Serialize;
 
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct BasicPlayer {
     pub name: String,
     pub my_moves: Vec<i32>,
@@ -70,7 +71,7 @@ pub trait Strategy {
     fn get_player(&mut self) -> &mut BasicPlayer;
 }
 
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct TitForTat {
 	pub play: BasicPlayer,
 }
@@ -89,7 +90,7 @@ impl Strategy for TitForTat {
         &mut self.play
     }
 }
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct GrimTrigger {
 	pub play: BasicPlayer,
 }
@@ -112,7 +113,7 @@ impl Strategy for GrimTrigger {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct AlwaysDefect {
 	pub play: BasicPlayer,
 }
@@ -127,7 +128,7 @@ impl Strategy for AlwaysDefect {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone,Serialize)]
 pub struct RandomDefect {
     pub play: BasicPlayer,
     pub probability: f32,
