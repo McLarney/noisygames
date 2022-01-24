@@ -39,7 +39,6 @@ impl Strategy for Strategies {
 
 
 fn main() {
-    let num_rounds = 5;
     let num_strategies = [20, 20, 20, 20];
     let round_lengths = vec![63, 77, 151, 151, 308];
     //potential strategies for now are always defect, tit for tat, and grim trigger
@@ -129,6 +128,13 @@ fn main() {
 
     let dirstr = test_utilities::build_datetime_folder();
     
+    let mut configs = testbed::generate_round_robin_configs(
+        g,
+        players,
+        round_lengths,
+        dirstr,
+        );
+    /*
     //then create all the configs
     let mut configs = Vec::new();
 
@@ -148,7 +154,7 @@ fn main() {
             configs.push(tmp_cfg);
         }
     }
-
+    */
     let mut threads = Vec::new();
     //then run all the configs and save them off
     for idx in 0..configs.len() {
