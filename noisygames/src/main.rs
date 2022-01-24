@@ -3,11 +3,9 @@ use crate::player::*;
 pub mod testbed;
 
 pub mod game;
-
+pub mod test_utilities;
 use crate::testbed::Config;
 use std::thread;
-
-use chrono::{Datelike, Timelike, Utc};
 use std::fs;
 use serde::Serialize;
 
@@ -16,6 +14,7 @@ enum Strategies {
     AlwaysDefect{player: AlwaysDefect},
     GrimTrigger{player: GrimTrigger},
     TitForTat{player: TitForTat},
+    RandomDefect{player: RandomDefect},
 }
 
 impl Strategy for Strategies {
@@ -24,6 +23,7 @@ impl Strategy for Strategies {
             Strategies::AlwaysDefect{ player } => player.strategy(),
             Strategies::GrimTrigger{ player } => player.strategy(),
             Strategies::TitForTat{ player } => player.strategy(),
+            Strategies::RandomDefect{ player } => player.strategy(),
         }
     }
 
@@ -32,6 +32,7 @@ impl Strategy for Strategies {
             Strategies::AlwaysDefect{ player } => player.get_player(),
             Strategies::GrimTrigger{ player } => player.get_player(),
             Strategies::TitForTat{ player } => player.get_player(),
+            Strategies::RandomDefect{ player } => player.get_player(),
         }
     }
 }
@@ -39,18 +40,17 @@ impl Strategy for Strategies {
 
 fn main() {
     let num_rounds = 5;
-    let num_strategies = [10, 23, 50];
-
+    let num_strategies = [20, 20, 20, 20];
     let round_lengths = vec![63, 77, 151, 151, 308];
     //potential strategies for now are always defect, tit for tat, and grim trigger
     let a_mtx = vec![
-        vec![-1,-3],
-        vec![0,-2]
+        vec![3,0],
+        vec![5,1]
     ];
 
     let b_mtx = vec![
-        vec![-1,0],
-        vec![-3,-2]
+        vec![3,5],
+        vec![0,1]
     ];
 
     //send this into a constructor for a Game type
@@ -83,7 +83,6 @@ fn main() {
         my_outcomes: Vec::new(),
         their_outcomes: Vec::new(),
     }; 
-    
     let player_c = BasicPlayer {
         name: "jimmy".to_string(),
         my_score: 0,
@@ -93,15 +92,33 @@ fn main() {
         my_outcomes: Vec::new(),
         their_outcomes: Vec::new(),
     };
+    
+    let player_d = BasicPlayer {
+        name: "jason".to_string(),
+        my_score: 0,
+        their_score: 0,
+        my_moves: Vec::new(),
+        their_moves: Vec::new(),
+        my_outcomes: Vec::new(),
+        their_outcomes: Vec::new(),
+    };
+    
     let a_tmp = AlwaysDefect { play: player_a };
-    let b_tmp = GrimTrigger { play: player_b };
+    let b_tmp = GrimTrigger { play: player_b};
     let c_tmp = TitForTat { play: player_c };
+    let d_tmp = RandomDefect { play: player_d, probability: 0.5 };
 
     let a_strat = Strategies::AlwaysDefect{ player: a_tmp };
     let b_strat = Strategies::GrimTrigger{ player: b_tmp };
     let c_strat = Strategies::TitForTat{ player: c_tmp };
+    let d_strat = Strategies::RandomDefect{ player: d_tmp };
 
-    let strat_types = vec![a_strat, b_strat, c_strat];
+    let strat_types = vec![
+        a_strat,
+        b_strat,
+        c_strat,
+        d_strat,
+    ];
     let mut players = Vec::new();
     //first set up all the players
     for i in 0..num_strategies.len() {
@@ -110,23 +127,8 @@ fn main() {
         }
     }
 
-    //set up the file directory for this run
-    let now = Utc::now();
-
-    let s = format!(
-        "Year{}Month{}Day{}Hour{}Min{}Sec{}",
-        now.year(),
-        now.month(),
-        now.day(),
-        now.hour(),
-        now.minute(),
-        now.second(),
-        );
-    let dirstr = format!("{}{}","/home/kennethmclarney/Documents/RustProjects/noisygames/test_runs/",s);
-
-    fs::create_dir_all(&dirstr).expect("Directory unable to be created");
-
-
+    let dirstr = test_utilities::build_datetime_folder();
+    
     //then create all the configs
     let mut configs = Vec::new();
 
