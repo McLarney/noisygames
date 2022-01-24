@@ -1,5 +1,6 @@
 noisygames/debug/
 noisygames/target/
+noisygames/target/debug/
 test_runs/
 
 Cargo.lock

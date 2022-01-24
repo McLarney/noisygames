@@ -10,7 +10,7 @@ use std::fs;
 use serde::Serialize;
 
 #[derive(Clone,Serialize)]
-enum Strategies {
+pub enum Strategies {
     AlwaysDefect{player: AlwaysDefect},
     GrimTrigger{player: GrimTrigger},
     TitForTat{player: TitForTat},
