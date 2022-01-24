@@ -43,17 +43,19 @@ pub fn generate_round_robin_configs (
         }
     }
     configs
-
 }
-//This is to be used for data that might get analyzed after the fact
-//struct DerivedData {
-//}
 
-//This is to collate the Config and the DerivedData for comprehensive access.
-//struct RunResults {
-//    config: Config,
-//    der_dat: DerivedData,
-//}
-//really what I'd like to do is to initialize players with all the relevant strategy stuff and
-//whatnot, then leave it to run with whatever strategy through some number of rounds with some
-//number of instances. For the time being, we can just do number of rounds.
+pub fn generate_players (
+    strat_types: Vec<Strategies>, 
+    num_strats: Vec<i32>
+    ) 
+    -> Vec<Strategies> 
+{
+    let mut players = Vec::new();
+    for i in 0..num_strats.len() {
+        for _ in 0..num_strats[i] {
+            players.push(strat_types[i].clone());
+        }
+    }
+    players
+}

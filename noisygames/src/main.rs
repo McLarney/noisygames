@@ -39,7 +39,7 @@ impl Strategy for Strategies {
 
 
 fn main() {
-    let num_strategies = [20, 20, 20, 20];
+    let num_strategies = vec![2, 2, 2, 2];
     let round_lengths = vec![63, 77, 151, 151, 308];
     //potential strategies for now are always defect, tit for tat, and grim trigger
     let a_mtx = vec![
@@ -64,7 +64,9 @@ fn main() {
     assert!(g.is_init);
 
     //now it's time to make the player types
-    let player_a = BasicPlayer {
+    let base_player = BasicPlayer::new();
+/*
+    {
         name: "john".to_string(),
         my_score: 0,
         their_score: 0,
@@ -73,44 +75,16 @@ fn main() {
         my_outcomes: Vec::new(),
         their_outcomes: Vec::new(),
     };
-    let player_b = BasicPlayer {
-        name: "jacob".to_string(),
-        my_score: 0,
-        their_score: 0,
-        my_moves: Vec::new(),
-        their_moves: Vec::new(),
-        my_outcomes: Vec::new(),
-        their_outcomes: Vec::new(),
-    }; 
-    let player_c = BasicPlayer {
-        name: "jimmy".to_string(),
-        my_score: 0,
-        their_score: 0,
-        my_moves: Vec::new(),
-        their_moves: Vec::new(),
-        my_outcomes: Vec::new(),
-        their_outcomes: Vec::new(),
-    };
-    
-    let player_d = BasicPlayer {
-        name: "jason".to_string(),
-        my_score: 0,
-        their_score: 0,
-        my_moves: Vec::new(),
-        their_moves: Vec::new(),
-        my_outcomes: Vec::new(),
-        their_outcomes: Vec::new(),
-    };
-    
-    let a_tmp = AlwaysDefect { play: player_a };
-    let b_tmp = GrimTrigger { play: player_b};
-    let c_tmp = TitForTat { play: player_c };
-    let d_tmp = RandomDefect { play: player_d, probability: 0.5 };
+  */  
+    let alwaysdefect_tmp = AlwaysDefect { play: base_player.clone() };
+    let grimtrigger_tmp = GrimTrigger { play: base_player.clone() };
+    let titfortat_tmp = TitForTat { play: base_player.clone() };
+    let randomdefect_tmp = RandomDefect { play: base_player.clone(), probability: 0.5 };
 
-    let a_strat = Strategies::AlwaysDefect{ player: a_tmp };
-    let b_strat = Strategies::GrimTrigger{ player: b_tmp };
-    let c_strat = Strategies::TitForTat{ player: c_tmp };
-    let d_strat = Strategies::RandomDefect{ player: d_tmp };
+    let a_strat = Strategies::AlwaysDefect{ player: alwaysdefect_tmp };
+    let b_strat = Strategies::GrimTrigger{ player: grimtrigger_tmp };
+    let c_strat = Strategies::TitForTat{ player: titfortat_tmp };
+    let d_strat = Strategies::RandomDefect{ player: randomdefect_tmp };
 
     let strat_types = vec![
         a_strat,
@@ -118,43 +92,22 @@ fn main() {
         c_strat,
         d_strat,
     ];
-    let mut players = Vec::new();
-    //first set up all the players
-    for i in 0..num_strategies.len() {
-        for _j in 0..num_strategies[i] {
-            players.push(strat_types[i].clone());
-        }
-    }
-
+    let players = testbed::generate_players(strat_types, num_strategies);
     let dirstr = test_utilities::build_datetime_folder();
     
-    let mut configs = testbed::generate_round_robin_configs(
+    let configs = testbed::generate_round_robin_configs(
         g,
         players,
         round_lengths,
         dirstr,
         );
-    /*
-    //then create all the configs
-    let mut configs = Vec::new();
+    
+    run_multithreaded_configs(configs);
 
-    for i_idx in 0..players.len() {
-        for j_idx in i_idx+1..players.len(){
-            let tmp_cfg = Config {
-                player_a: players[i_idx].clone(),
-                player_a_num: i_idx,
-                player_b: players[j_idx].clone(),
-                player_b_num: j_idx,
-                game: g.clone(),
-                num_rounds: num_rounds,
-                num_round_lengths: round_lengths.clone(),
-                location: dirstr.to_string().clone(),
-            };
+}
 
-            configs.push(tmp_cfg);
-        }
-    }
-    */
+fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
+
     let mut threads = Vec::new();
     //then run all the configs and save them off
     for idx in 0..configs.len() {
@@ -171,9 +124,8 @@ fn main() {
 
     //go through all threads and join
     for thread in threads {
-        thread.join().unwrap();
+        thread.join().unwrap()
     }
-
 }
 
 fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {

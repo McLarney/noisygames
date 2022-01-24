@@ -23,6 +23,19 @@ pub trait Player {
     fn update_score(&mut self, round_score: (i32, i32));
     fn read_mv(&mut self, read_mvs: (i32, i32), outcome: (i32, i32));
 }
+impl BasicPlayer {
+    pub fn new() -> BasicPlayer {
+        BasicPlayer {
+            name: "john".to_string(),
+            my_score: 0,
+            their_score: 0,
+            my_moves: Vec::new(),
+            their_moves: Vec::new(),
+            my_outcomes: Vec::new(),
+            their_outcomes: Vec::new(),
+        }
+    }
+}
 
 impl Player for BasicPlayer {
     fn get_name(&self) -> &str {
