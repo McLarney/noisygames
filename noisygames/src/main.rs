@@ -51,31 +51,15 @@ fn main() {
         vec![3,5],
         vec![0,1]
     ];
-
-    //send this into a constructor for a Game type
-    
     let mut g = game::Game{ 
         payoff_a: a_mtx,
         payoff_b: b_mtx,
         is_init: false};
-    
-    //run iterated some N times with strategy profiles specified for each player
     g.init_game(); 
     assert!(g.is_init);
 
-    //now it's time to make the player types
     let base_player = BasicPlayer::new();
-/*
-    {
-        name: "john".to_string(),
-        my_score: 0,
-        their_score: 0,
-        my_moves: Vec::new(),
-        their_moves: Vec::new(),
-        my_outcomes: Vec::new(),
-        their_outcomes: Vec::new(),
-    };
-  */  
+
     let alwaysdefect_tmp = AlwaysDefect { play: base_player.clone() };
     let grimtrigger_tmp = GrimTrigger { play: base_player.clone() };
     let titfortat_tmp = TitForTat { play: base_player.clone() };
@@ -85,7 +69,6 @@ fn main() {
     let b_strat = Strategies::GrimTrigger{ player: grimtrigger_tmp };
     let c_strat = Strategies::TitForTat{ player: titfortat_tmp };
     let d_strat = Strategies::RandomDefect{ player: randomdefect_tmp };
-
     let strat_types = vec![
         a_strat,
         b_strat,
@@ -94,16 +77,10 @@ fn main() {
     ];
     let players = testbed::generate_players(strat_types, num_strategies);
     let dirstr = test_utilities::build_datetime_folder();
-    
     let configs = testbed::generate_round_robin_configs(
-        g,
-        players,
-        round_lengths,
-        dirstr,
-        );
+        g, players, round_lengths, dirstr );
     
     run_multithreaded_configs(configs);
-
 }
 
 fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
