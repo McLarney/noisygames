@@ -9,57 +9,31 @@ use std::thread;
 use std::fs;
 use serde::Serialize;
 
-#[derive(Clone,Serialize)]
-pub enum Strategies {
-    AlwaysDefect{player: AlwaysDefect},
-    GrimTrigger{player: GrimTrigger},
-    TitForTat{player: TitForTat},
-    RandomDefect{player: RandomDefect},
-}
-
-impl Strategy for Strategies {
-    fn strategy(&self) -> i32 {
-        match self {
-            Strategies::AlwaysDefect{ player } => player.strategy(),
-            Strategies::GrimTrigger{ player } => player.strategy(),
-            Strategies::TitForTat{ player } => player.strategy(),
-            Strategies::RandomDefect{ player } => player.strategy(),
-        }
-    }
-
-    fn get_player(&mut self) -> &mut BasicPlayer {
-        match self {
-            Strategies::AlwaysDefect{ player } => player.get_player(),
-            Strategies::GrimTrigger{ player } => player.get_player(),
-            Strategies::TitForTat{ player } => player.get_player(),
-            Strategies::RandomDefect{ player } => player.get_player(),
-        }
-    }
-}
-
-
 fn main() {
+    let is_round_robin = true;
+    //let run_iterative = false;
+    if is_round_robin {
+        run_round_robin();
+    }
+
+}
+fn run_iterative() {
+    //so, how's this going to work?
+    //firstly we need to build a player model
+    //then from a player model, generate a population
+    //generate configs
+    //evaluate outcome, killing losers
+    //generate sex mixing getting back to the same population
+    //generate mutations
+    //save population statistics
+    //rerun for next round
+}
+
+fn run_round_robin() {
     let num_strategies = vec![2, 2, 2, 2];
     let round_lengths = vec![63, 77, 151, 151, 308];
     //potential strategies for now are always defect, tit for tat, and grim trigger
-    let a_mtx = vec![
-        vec![3,0],
-        vec![5,1]
-    ];
-
-    let b_mtx = vec![
-        vec![3,5],
-        vec![0,1]
-    ];
-    let mut g = game::Game{ 
-        payoff_a: a_mtx,
-        payoff_b: b_mtx,
-        is_init: false};
-    g.init_game(); 
-    assert!(g.is_init);
-
     let base_player = BasicPlayer::new();
-
     let alwaysdefect_tmp = AlwaysDefect { play: base_player.clone() };
     let grimtrigger_tmp = GrimTrigger { play: base_player.clone() };
     let titfortat_tmp = TitForTat { play: base_player.clone() };
@@ -75,6 +49,22 @@ fn main() {
         c_strat,
         d_strat,
     ];
+    
+    let a_mtx = vec![
+        vec![3,0],
+        vec![5,1]
+    ];
+    let b_mtx = vec![
+        vec![3,5],
+        vec![0,1]
+    ];
+    let mut g = game::Game{ 
+        payoff_a: a_mtx,
+        payoff_b: b_mtx,
+        is_init: false};
+    g.init_game(); 
+    assert!(g.is_init);
+
     let players = testbed::generate_players(strat_types, num_strategies);
     let dirstr = test_utilities::build_datetime_folder();
     let configs = testbed::generate_round_robin_configs(
@@ -84,21 +74,17 @@ fn main() {
 }
 
 fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
-
     let mut threads = Vec::new();
     //then run all the configs and save them off
     for idx in 0..configs.len() {
-
         println!("Running thread {}", idx);
         let tmp_config = configs.pop().unwrap();
         let thread = thread::spawn(move || {
             let out_configs = run_instance(tmp_config);
             record_configs(out_configs);
         });
-
         threads.push(thread);
     }
-
     //go through all threads and join
     for thread in threads {
         thread.join().unwrap()
@@ -108,7 +94,6 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
 fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {
     let s = &configs[0].location;
     let group_dir = format!("{}/player{}player{}/", s, &configs[0].player_a_num, &configs[0].player_b_num);
-    
     fs::create_dir_all(&group_dir).expect("Directory unable to be created");
 
     for idx in 0..configs.len() {
@@ -116,7 +101,6 @@ fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {
         let j = serde_json::to_string(&configs[idx]).unwrap();
 
         println!("{}", &run_dir);
-
         fs::write(run_dir, j).expect("Unable to write file");
     }
 }

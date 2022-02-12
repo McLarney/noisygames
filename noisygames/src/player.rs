@@ -163,3 +163,34 @@ impl Strategy for RandomDefect {
         &mut self.play
     }
 }
+
+
+#[derive(Clone,Serialize)]
+pub enum Strategies {
+    AlwaysDefect{player: AlwaysDefect},
+    GrimTrigger{player: GrimTrigger},
+    TitForTat{player: TitForTat},
+    RandomDefect{player: RandomDefect},
+}
+
+impl Strategy for Strategies {
+    fn strategy(&self) -> i32 {
+        match self {
+            Strategies::AlwaysDefect{ player } => player.strategy(),
+            Strategies::GrimTrigger{ player } => player.strategy(),
+            Strategies::TitForTat{ player } => player.strategy(),
+            Strategies::RandomDefect{ player } => player.strategy(),
+        }
+    }
+
+    fn get_player(&mut self) -> &mut BasicPlayer {
+        match self {
+            Strategies::AlwaysDefect{ player } => player.get_player(),
+            Strategies::GrimTrigger{ player } => player.get_player(),
+            Strategies::TitForTat{ player } => player.get_player(),
+            Strategies::RandomDefect{ player } => player.get_player(),
+        }
+    }
+}
+
+

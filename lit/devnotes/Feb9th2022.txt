@@ -1,0 +1,28 @@
+I think I need a generator setup for the types of experiments to run. Honestly I'd like to be able to initialize stuff in a much cleaner way, preferably just changing the name of a particular experiment.
+
+Round Robin Requires:
+-strategies
+-number of strategy instances per strategy
+-strategy parameters
+
+Evolutionary Stochastic Iterated Prisoner's Dilemma
+-number of rounds to play over
+-probability of mutation
+-probability of matchup
+
+Really I'd like to have a file for each one of these variations.
+
+Then each of these is interfaced through a generator.rs file
+
+The strategies interfacing should be done in the player.rs file. the fact that it's in main is really not ideal.
+Okay we're up to date, so I should be totally okay to change a bunch of this stuff.
+
+Eh or maybe it should be maintained in a strategies.rs file.
+
+player.rs is responsible for the varieties of strategies
+strategies.rs is responsible for the interfacing with said strategies
+testbed.rs is responsible for constructing matchups
+
+matrix initialization should not be in the main file. It should be in a config file that is the imported into rust for these runs.
+
+Need to figure out metadata.
