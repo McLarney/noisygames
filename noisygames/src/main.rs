@@ -2,6 +2,7 @@ pub mod player;
 use crate::player::*;
 pub mod testbed;
 
+
 pub mod game;
 pub mod test_utilities;
 use crate::testbed::Config;
@@ -11,21 +12,95 @@ use serde::Serialize;
 
 fn main() {
     let is_round_robin = true;
-    //let run_iterative = false;
     if is_round_robin {
         run_round_robin();
     }
+    let is_iter = false;
+    if is_iter {
+        run_iterative();
+    }
 
 }
+
+use itertools::Itertools;
+use itertools_num::linspace;
 fn run_iterative() {
-    //so, how's this going to work?
-    //firstly we need to build a player model
-    //then from a player model, generate a population
-    //generate configs
-    //evaluate outcome, killing losers
-    //generate sex mixing getting back to the same population
-    //generate mutations
-    //save population statistics
+    let round_length=1000;
+    let num_copies = 5;
+    let prob_step = 1;
+    //to use generate_players, we need go generate a vector of strategies
+    let base_player = BasicPlayer::new();
+    let mut probs_vec = Vec::new();
+    
+    let mut tmp_prob = 0;
+    while tmp_prob <= 100 {
+        probs_vec.push(tmp_prob);
+        tmp_prob+=prob_step;
+    }
+
+    let mut players = Vec::new();
+
+    for perm in probs_vec.iter().permutations(4).unique() {
+        let p_tmp=StochasticPlayer{play:base_player.clone(),
+            prob_vec: vec![
+                *perm[0] as f32/100.,
+                *perm[1] as f32/100.,
+                *perm[2] as f32/100.,
+                *perm[3] as f32/100.
+            ]
+            };
+        let p = Strategies::StochasticPlayer{player: p_tmp};
+        for _ in 0..num_copies {
+            players.push(p.clone());
+        }
+    }
+
+    //now that we have a bunch of players, generate and shuffle the pairs
+    let player_pairs = test_utilities::shuffle_and_pair(players);
+    //now with a set of pairs, we can generate all the configs
+
+    let a_mtx = vec![
+        vec![3,0],
+        vec![5,1]
+    ];
+    let b_mtx = vec![
+        vec![3,5],
+        vec![0,1]
+    ];
+    let mut g = game::Game{ 
+        payoff_a: a_mtx,
+        payoff_b: b_mtx,
+        is_init: false};
+    g.init_game(); 
+    assert!(g.is_init);
+
+    let dirstr = test_utilities::build_datetime_folder();
+    let mut configs = Vec::new();
+    
+    for (idx, pr) in player_pairs.iter().enumerate() {
+        let tmp_cfg = Config {
+            player_a: pr[0].clone(),
+            player_a_num: idx,
+            player_b: pr[1].clone(),
+            player_b_num: idx*player_pairs.len(),
+            game: g.clone(),
+            num_rounds: 1,
+            num_round_lengths: vec![round_length],
+            location: dirstr.to_string().clone(),
+        };
+        configs.push(tmp_cfg);
+    }
+    //for all configs, run the game!
+    
+    //three options, refactor the code to allow for configs to be returned
+    //simply make a parallel setup
+    //reimport the information for each round
+    //
+    //refactoring is obviously the right thing to do but more of a pain.
+
+    //from each set of configs, evaluate outcome
+    //evaluate outcome, killing losers, double winners
+    //save population statistics (distributions on each trait)
     //rerun for next round
 }
 

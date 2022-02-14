@@ -164,6 +164,41 @@ impl Strategy for RandomDefect {
     }
 }
 
+#[derive(Clone,Serialize)]
+pub struct StochasticPlayer {
+    pub play: BasicPlayer,
+    pub prob_vec: Vec<f32>,
+}
+impl Strategy for StochasticPlayer {
+    fn strategy(&self) -> i32 {
+        //get the play from last round
+        let my_mv=*self.play.my_moves.last().unwrap();
+        let their_mv=*self.play.their_moves.last().unwrap();
+        //given the play requirement, roll a die
+        let mut roll: f32 = rand::thread_rng().gen_range(0..=100) as f32;
+        roll=roll/100.0;
+        //if roll less than vec entry, return cooperate(0), else return defect(1)
+        let retval;
+        if my_mv==0 {
+            if their_mv == 0 {
+                if self.prob_vec[0] > roll {retval=0} else {retval=1}
+            } else {
+                if self.prob_vec[1] > roll {retval=0} else {retval=1}
+            }
+        } else {
+            if their_mv == 0 {
+                if self.prob_vec[2] > roll {retval=0} else {retval=1}
+            } else {
+                if self.prob_vec[3] > roll {retval=0} else {retval=1}
+            }
+        }
+        retval
+    }
+    fn get_player(&mut self) -> &mut BasicPlayer {
+        &mut self.play
+    }
+}
+
 
 #[derive(Clone,Serialize)]
 pub enum Strategies {
@@ -171,6 +206,7 @@ pub enum Strategies {
     GrimTrigger{player: GrimTrigger},
     TitForTat{player: TitForTat},
     RandomDefect{player: RandomDefect},
+    StochasticPlayer{player: StochasticPlayer},
 }
 
 impl Strategy for Strategies {
@@ -180,6 +216,7 @@ impl Strategy for Strategies {
             Strategies::GrimTrigger{ player } => player.strategy(),
             Strategies::TitForTat{ player } => player.strategy(),
             Strategies::RandomDefect{ player } => player.strategy(),
+            Strategies::StochasticPlayer{ player } => player.strategy(),
         }
     }
 
@@ -189,6 +226,7 @@ impl Strategy for Strategies {
             Strategies::GrimTrigger{ player } => player.get_player(),
             Strategies::TitForTat{ player } => player.get_player(),
             Strategies::RandomDefect{ player } => player.get_player(),
+            Strategies::StochasticPlayer{ player } => player.get_player(),
         }
     }
 }
