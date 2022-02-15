@@ -23,7 +23,6 @@ fn main() {
 }
 
 use itertools::Itertools;
-use itertools_num::linspace;
 fn run_iterative() {
     let round_length=1000;
     let num_copies = 5;
@@ -148,15 +147,26 @@ fn run_round_robin() {
     run_multithreaded_configs(configs);
 }
 
-fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
+
+use std::sync::{Arc,Mutex};
+fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>) -> Vec<Config<Strategies,Strategies>>{
     let mut threads = Vec::new();
     //then run all the configs and save them off
+    let all_configs = Arc::new(Mutex::new(Vec::new()));
     for idx in 0..configs.len() {
         println!("Running thread {}", idx);
+        let all_configs_clone = Arc::clone(&all_configs);
+
         let tmp_config = configs.pop().unwrap();
         let thread = thread::spawn(move || {
+            let mut all_cfg = all_configs_clone.lock().unwrap();
             let out_configs = run_instance(tmp_config);
-            record_configs(out_configs);
+            record_configs(&out_configs);
+            for out_cfg in out_configs {
+                all_cfg.push(out_cfg);
+            }
+            
+            drop(all_cfg);
         });
         threads.push(thread);
     }
@@ -164,9 +174,11 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
     for thread in threads {
         thread.join().unwrap()
     }
+    let all_cfg = all_configs.lock().unwrap();
+    all_cfg.to_vec()
 }
 
-fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {
+fn record_configs<T:Serialize,U:Serialize>(configs: &Vec<Config<T,U>>) {
     let s = &configs[0].location;
     let group_dir = format!("{}/player{}player{}/", s, &configs[0].player_a_num, &configs[0].player_b_num);
     fs::create_dir_all(&group_dir).expect("Directory unable to be created");
