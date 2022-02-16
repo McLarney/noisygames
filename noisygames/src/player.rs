@@ -171,6 +171,10 @@ pub struct StochasticPlayer {
 }
 impl Strategy for StochasticPlayer {
     fn strategy(&self) -> i32 {
+        //initially cooperate
+        if self.play.get_their_moves().len() == 0 {
+            return 0
+        }
         //get the play from last round
         let my_mv=*self.play.my_moves.last().unwrap();
         let their_mv=*self.play.their_moves.last().unwrap();
