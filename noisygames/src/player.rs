@@ -4,16 +4,17 @@ use serde::Serialize;
 #[derive(Clone,Serialize)]
 pub struct BasicPlayer {
     pub name: String,
-    pub my_moves: Vec<i32>,
-    pub their_moves: Vec<i32>,
-    pub my_outcomes: Vec<i32>,
-    pub their_outcomes: Vec<i32>,
+    pub my_moves: Box<Vec<i32>>,
+    pub their_moves: Box<Vec<i32>>,
+    pub my_outcomes: Box<Vec<i32>>,
+    pub their_outcomes: Box<Vec<i32>>,
     pub my_score: i32,
     pub their_score: i32,
 }
 
 pub trait Player {
     fn get_name(&self) -> &str;
+    fn set_name(&mut self) -> &mut String;
     fn get_my_score(&self) -> i32;
     fn get_their_score(&self) -> i32;
     fn get_my_moves(&self) -> &Vec<i32>;
@@ -29,10 +30,10 @@ impl BasicPlayer {
             name: "john".to_string(),
             my_score: 0,
             their_score: 0,
-            my_moves: Vec::new(),
-            their_moves: Vec::new(),
-            my_outcomes: Vec::new(),
-            their_outcomes: Vec::new(),
+            my_moves: Box::new(Vec::new()),
+            their_moves: Box::new(Vec::new()),
+            my_outcomes: Box::new(Vec::new()),
+            their_outcomes: Box::new(Vec::new()),
         }
     }
 }
@@ -41,7 +42,9 @@ impl Player for BasicPlayer {
     fn get_name(&self) -> &str {
         &self.name[..]
     }
-    
+    fn set_name(&mut self) -> &mut String {
+        &mut self.name
+    }
     fn get_my_score(&self) -> i32 {
         self.my_score
     }

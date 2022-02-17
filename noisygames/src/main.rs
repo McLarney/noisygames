@@ -11,7 +11,7 @@ use std::fs;
 use serde::Serialize;
 
 fn main() {
-    let is_round_robin = false;
+    let is_round_robin = true;
     if is_round_robin {
         run_round_robin();
     }
@@ -23,7 +23,8 @@ fn main() {
 }
 
 fn run_iterative() {
-    let round_length=10;
+    let round_length=2;
+    let num_rounds = 2;
     let num_copies = 1;
     let prob_step = 0.09;
     //to use generate_players, we need go generate a vector of strategies
@@ -40,17 +41,14 @@ fn run_iterative() {
     println!("Length Probs {}", probs_vec.len());
     let all_probs = test_utilities::get_permutations_with_replacement(probs_vec,4);
 
+    let mut counter = 0;
     let mut players = Vec::new();
     for perm in all_probs {
-        let p_tmp=StochasticPlayer{play:base_player.clone(),
-            prob_vec: vec![
-                perm[0],
-                perm[1],
-                perm[2],
-                perm[3]
-            ]
-            };
+        let mut p_tmp=StochasticPlayer{ play:base_player.clone(), prob_vec: perm };
+        p_tmp.play.name=counter.to_string();
+        counter+=1;
         let p = Strategies::StochasticPlayer{player: p_tmp};
+        
         for _ in 0..num_copies {
             players.push(p.clone());
         }
@@ -78,18 +76,17 @@ fn run_iterative() {
 
     let dirstr = test_utilities::build_datetime_folder();
     let mut configs = Vec::new();
-    
-    for (idx, pr) in player_pairs.iter().enumerate() {
+    let mut counter = 0;    
+    for ( _ , pr) in player_pairs.iter().enumerate() {
         let tmp_cfg = Config {
             player_a: pr[0].clone(),
-            player_a_num: idx,
             player_b: pr[1].clone(),
-            player_b_num: idx*player_pairs.len(),
             game: g.clone(),
             num_rounds: 1,
             num_round_lengths: vec![round_length],
             location: dirstr.to_string().clone(),
         };
+        counter+=2;
         configs.push(tmp_cfg);
     }
     //for all configs, run the game!
@@ -97,10 +94,52 @@ fn run_iterative() {
     println!("We have {} configs!", configs.len());
     let round_configs = run_multithreaded_configs(configs);
     //evaluate outcome, killing losers, double winners
+    //first generate the list of winners
+    let mut winning_players = Vec::new();
+    for mut cfg in round_configs {
+       let a_score = cfg.player_a.get_player().get_my_score();
+       let b_score = cfg.player_b.get_player().get_their_score();
+
+       if a_score == b_score {
+           //both move on in ties
+           winning_players.push(cfg.player_a);
+           winning_players.push(cfg.player_b);
+
+       } else if a_score > b_score {
+           counter+=1;
+           let mut new_player = cfg.player_a.clone();
+           *new_player.get_player().set_name()=counter.to_string();
+           winning_players.push(new_player);
+       } else if a_score < b_score {
+           counter+=1;
+           let mut new_player = cfg.player_b.clone();
+           *new_player.get_player().set_name()=counter.to_string();
+           winning_players.push(new_player);
+       }
+    }
+    //now that we have a proper list of winning players, we can shuffle and pair and generate new
+    //configs
+    let player_pairs = test_utilities::shuffle_and_pair(winning_players);
     
+    let mut round_configs = Vec::new();
+    for ( _ , pr) in player_pairs.iter().enumerate() {
+        let tmp_cfg = Config {
+            player_a: pr[0].clone(),
+            player_b: pr[1].clone(),
+            game: g.clone(),
+            num_rounds: 1,
+            num_round_lengths: vec![round_length],
+            location: dirstr.to_string().clone(),
+        };
+        round_configs.push(tmp_cfg);
+    }
+
+    
+    //now play round
+
+    let round_configs = run_multithreaded_configs(round_configs);
     //save population statistics (distributions on each trait)
     
-    //rerun for next round
 }
 
 
@@ -179,9 +218,13 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>) ->
     all_cfg.to_vec()
 }
 
-fn record_configs<T:Serialize,U:Serialize>(configs: &Vec<Config<T,U>>) {
+fn record_configs<T:Serialize+player::Strategy+Clone, U:Serialize+player::Strategy+Clone>(configs: &Vec<Config<T,U>>) {
     let s = &configs[0].location;
-    let group_dir = format!("{}/player{}player{}/", s, &configs[0].player_a_num, &configs[0].player_b_num);
+    let mut cfg_tmp=configs[0].clone();
+    let player_a_name=cfg_tmp.player_a.get_player().get_name();
+    let player_b_name=cfg_tmp.player_b.get_player().get_name();
+
+    let group_dir = format!("{}/player{}player{}/", s, player_a_name, player_b_name);
     fs::create_dir_all(&group_dir).expect("Directory unable to be created");
 
     for idx in 0..configs.len() {
@@ -193,14 +236,10 @@ fn record_configs<T:Serialize,U:Serialize>(configs: &Vec<Config<T,U>>) {
     }
 }
 
-
 fn run_instance<T: Strategy+Clone, U: Strategy+Clone>(config: Config<T, U>) -> Vec<Config<T, U>> {
     let mut configs = Vec::new();
-
     for idx in 0..config.num_rounds {
-        
         let mut tmp_cfg = config.clone();
-        
         for _ in 0..config.num_round_lengths[idx] {
             let move_a = tmp_cfg.player_a.strategy();
             let move_b = tmp_cfg.player_b.strategy();
