@@ -11,7 +11,7 @@ use std::fs;
 use serde::Serialize;
 
 fn main() {
-    let is_round_robin = true;
+    let is_round_robin = false;
     if is_round_robin {
         run_round_robin();
     }
@@ -23,8 +23,8 @@ fn main() {
 }
 
 fn run_iterative() {
-    let round_length=2;
-    let num_rounds = 2;
+    let round_length=100;
+    let num_rounds = 50;
     let num_copies = 1;
     let prob_step = 0.09;
     //to use generate_players, we need go generate a vector of strategies
@@ -92,54 +92,63 @@ fn run_iterative() {
     //for all configs, run the game!
     //code is now refactored to also return the configs after each round 
     println!("We have {} configs!", configs.len());
-    let round_configs = run_multithreaded_configs(configs);
+    let mut round_configs = run_multithreaded_configs(configs);
+    record_iter_stats(&round_configs,0);
     //evaluate outcome, killing losers, double winners
     //first generate the list of winners
-    let mut winning_players = Vec::new();
-    for mut cfg in round_configs {
-       let a_score = cfg.player_a.get_player().get_my_score();
-       let b_score = cfg.player_b.get_player().get_their_score();
+    for idx in 1..num_rounds {
+        println!("On round number: {}", idx);
+        let mut winning_players = Vec::new();
+        for cfg in &mut round_configs {
+            let a_score = cfg.player_a.get_player().get_my_score();
+            let b_score = cfg.player_b.get_player().get_my_score();
+            //println!("A score {}. B score {}.",&a_score,&b_score);
+            if a_score == b_score {
+                //both move on in ties
+                winning_players.push(cfg.player_a.clone());
+                winning_players.push(cfg.player_b.clone());
+            } else if a_score > b_score {
+                counter+=1;
+                let mut new_player = cfg.player_a.clone();
+                winning_players.push(cfg.player_a.clone());
+                *new_player.get_player().set_name()=counter.to_string();
+                winning_players.push(new_player);
+            } else if a_score < b_score {
+                counter+=1;
+                let mut new_player = cfg.player_b.clone();
+                winning_players.push(cfg.player_b.clone());
+                *new_player.get_player().set_name()=counter.to_string();
+                winning_players.push(new_player);
+            }
+        }
+        println!("This many players: {}", winning_players.len());
+    
+        //now that we have a proper list of winning players, we can shuffle and pair and generate new
+        //configs
+        let player_pairs_in_loop = test_utilities::shuffle_and_pair(winning_players);
 
-       if a_score == b_score {
-           //both move on in ties
-           winning_players.push(cfg.player_a);
-           winning_players.push(cfg.player_b);
+        let mut new_round_configs = Vec::new();
+        for ( _ , pr) in player_pairs_in_loop.iter().enumerate() {
+            let tmp_cfg = Config {
+                player_a: pr[0].clone(),
+                player_b: pr[1].clone(),
+                game: g.clone(),
+                num_rounds: 1,
+                num_round_lengths: vec![round_length],
+                location: dirstr.to_string().clone(),
+            };
+            new_round_configs.push(tmp_cfg);
+        }
+        //now play round
 
-       } else if a_score > b_score {
-           counter+=1;
-           let mut new_player = cfg.player_a.clone();
-           *new_player.get_player().set_name()=counter.to_string();
-           winning_players.push(new_player);
-       } else if a_score < b_score {
-           counter+=1;
-           let mut new_player = cfg.player_b.clone();
-           *new_player.get_player().set_name()=counter.to_string();
-           winning_players.push(new_player);
-       }
+        let updated_configs = run_multithreaded_configs(new_round_configs);
+        record_iter_stats(&updated_configs,idx);
+
+        round_configs = updated_configs;
+        //save population statistics (distributions on each trait)
+        println!("Done with round: {}", idx);
     }
-    //now that we have a proper list of winning players, we can shuffle and pair and generate new
-    //configs
-    let player_pairs = test_utilities::shuffle_and_pair(winning_players);
-    
-    let mut round_configs = Vec::new();
-    for ( _ , pr) in player_pairs.iter().enumerate() {
-        let tmp_cfg = Config {
-            player_a: pr[0].clone(),
-            player_b: pr[1].clone(),
-            game: g.clone(),
-            num_rounds: 1,
-            num_round_lengths: vec![round_length],
-            location: dirstr.to_string().clone(),
-        };
-        round_configs.push(tmp_cfg);
-    }
-
-    
-    //now play round
-
-    let round_configs = run_multithreaded_configs(round_configs);
-    //save population statistics (distributions on each trait)
-    
+    println!("Done with test!");
 }
 
 
@@ -201,7 +210,7 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>) ->
         let thread = thread::spawn(move || {
             let mut all_cfg = all_configs_clone.lock().unwrap();
             let out_configs = run_instance(tmp_config);
-            record_configs(&out_configs);
+            //record_configs(&out_configs);
             for out_cfg in out_configs {
                 all_cfg.push(out_cfg);
             }
@@ -235,7 +244,23 @@ fn record_configs<T:Serialize+player::Strategy+Clone, U:Serialize+player::Strate
         fs::write(run_dir, j).expect("Unable to write file");
     }
 }
+fn record_iter_stats<StochasticPlayer: player::StochasticP>(configs: &Vec<Config<StochasticPlayer,StochasticPlayer>>, round_num: usize) {
+    //want to increment through all players in all configs and record their probability vector
+    let s = &configs[0].location;
 
+    let round_dir = format!("{}/round{}/",s,round_num);
+    fs::create_dir_all(&round_dir).expect("Directory unable to be created");
+    //build out a vector of all the strategies played
+    let mut all_probs = Vec::new();
+    for idx in 0..configs.len() {
+        all_probs.push(configs[idx].player_a.get_prob_vec());
+        all_probs.push(configs[idx].player_b.get_prob_vec());
+    }
+    let j = serde_json::to_string(&all_probs).unwrap();
+    println!("{}",&round_dir);
+    let full_path = format!("{}/all_probs.json",round_dir);
+    fs::write(full_path,j).expect("Unable to write file");
+}
 fn run_instance<T: Strategy+Clone, U: Strategy+Clone>(config: Config<T, U>) -> Vec<Config<T, U>> {
     let mut configs = Vec::new();
     for idx in 0..config.num_rounds {

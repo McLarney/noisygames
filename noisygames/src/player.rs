@@ -205,7 +205,14 @@ impl Strategy for StochasticPlayer {
         &mut self.play
     }
 }
-
+pub trait StochasticP {
+    fn get_prob_vec(&self) -> Vec<f32>;
+}
+impl StochasticP for StochasticPlayer {
+    fn get_prob_vec(&self) -> Vec<f32>{
+        self.prob_vec.clone()
+    }
+}
 
 #[derive(Clone,Serialize)]
 pub enum Strategies {
@@ -214,6 +221,15 @@ pub enum Strategies {
     TitForTat{player: TitForTat},
     RandomDefect{player: RandomDefect},
     StochasticPlayer{player: StochasticPlayer},
+}
+impl StochasticP for Strategies {
+    fn get_prob_vec(&self) -> Vec<f32> {
+        let v = vec![0.23];
+        match self {
+            Strategies::StochasticPlayer{ player } => player.get_prob_vec(),
+            _ => v,
+        }
+    }
 }
 
 impl Strategy for Strategies {
