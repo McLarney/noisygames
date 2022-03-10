@@ -16,14 +16,17 @@ fn main() {
         run_round_robin();
     }
     let is_iter = true;
+    let num_runs = 1000;
     if is_iter {
-        run_iterative();
+        for _ in 0..num_runs {
+            run_iterative();
+        }
     }
 
 }
 
 fn run_iterative() {
-    let round_length=100;
+    let round_length=50;
     let num_rounds = 50;
     let num_copies = 1;
     let prob_step = 0.09;
@@ -92,14 +95,14 @@ fn run_iterative() {
     //for all configs, run the game!
     //code is now refactored to also return the configs after each round 
     println!("We have {} configs!", configs.len());
-    let mut round_configs = run_multithreaded_configs(configs);
+    let mut round_configs = run_multithreaded_configs(Box::new(configs));
     record_iter_stats(&round_configs,0);
     //evaluate outcome, killing losers, double winners
     //first generate the list of winners
     for idx in 1..num_rounds {
         println!("On round number: {}", idx);
         let mut winning_players = Vec::new();
-        for cfg in &mut round_configs {
+        for mut cfg in *round_configs {
             let a_score = cfg.player_a.get_player().get_my_score();
             let b_score = cfg.player_b.get_player().get_my_score();
             //println!("A score {}. B score {}.",&a_score,&b_score);
@@ -141,7 +144,7 @@ fn run_iterative() {
         }
         //now play round
 
-        let updated_configs = run_multithreaded_configs(new_round_configs);
+        let updated_configs = run_multithreaded_configs(Box::new(new_round_configs));
         record_iter_stats(&updated_configs,idx);
 
         round_configs = updated_configs;
@@ -193,12 +196,12 @@ fn run_round_robin() {
     let configs = testbed::generate_round_robin_configs(
         g, players, round_lengths, dirstr );
     
-    run_multithreaded_configs(configs);
+    run_multithreaded_configs(Box::new(configs));
 }
 
 
 use std::sync::{Arc,Mutex};
-fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>) -> Vec<Config<Strategies,Strategies>>{
+fn run_multithreaded_configs(mut configs: Box<Vec<Config<Strategies,Strategies>>>) -> Box<Vec<Config<Strategies,Strategies>>>{
     let mut threads = Vec::new();
     //then run all the configs and save them off
     let all_configs = Arc::new(Mutex::new(Vec::new()));
@@ -224,7 +227,7 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>) ->
         thread.join().unwrap()
     }
     let all_cfg = all_configs.lock().unwrap();
-    all_cfg.to_vec()
+    Box::new(all_cfg.to_vec())
 }
 
 fn record_configs<T:Serialize+player::Strategy+Clone, U:Serialize+player::Strategy+Clone>(configs: &Vec<Config<T,U>>) {
