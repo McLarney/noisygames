@@ -6,6 +6,8 @@ The goal with this project is to study how games of strategy change as noise is 
 For starters, I will examine Iterated Prisoner's Dilemma. Firstly, simple strategies found from the Axelrod tournments will be employed. Eventually this work will build to include differential noise applied for "read" as well as "write" from the game.
 
 ## Base Game
+Prisoner's dilemma played over rounds with aggregate score. [Wikipedia does a good job here](https://en.wikipedia.org/wiki/Prisoner%27s_dilemma#The_iterated_prisoner's_dilemma)
+
 [Iterative Prisoner's Dilemma](https://www.proseaic.com/iterated-prisoners-dilemma-with-rust/)
 
 ## Contemporary Research: Zero Determinant Strategies
