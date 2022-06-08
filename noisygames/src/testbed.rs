@@ -53,8 +53,9 @@ pub fn generate_players (
 {
     let mut players = Vec::new();
     for i in 0..num_strats.len() {
-        for _ in 0..num_strats[i] {
-            players.push(strat_types[i].clone());
+        for _ in 0..num_strats[i] { 
+            let idx = i % 4; // edited for the purpose of timing program, TODO recommend changeing in final product
+            players.push(strat_types[idx].clone());
         }
     }
     players
