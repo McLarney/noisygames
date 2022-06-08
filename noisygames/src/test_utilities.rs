@@ -1,7 +1,7 @@
 use chrono::{Datelike, Timelike, Utc};
 use std::fs;
 
-pub fn build_datetime_folder() -> String {
+pub fn build_datetime_folder(argument : String) -> String {
     let now = Utc::now();
     let s = format!(
         "Year{}Month{}Day{}Hour{}Min{}Sec{}",
@@ -12,7 +12,8 @@ pub fn build_datetime_folder() -> String {
         now.minute(),
         now.second(),
         );
-    let dirstr = format!("{}{}","/home/kennethmclarney/Documents/RustProjects/noisygames/test_runs/",s);
+    //let dirstr = format!("{}{}","/home/kennethmclarney/Documents/RustProjects/noisygames/test_runs/",s);
+    let dirstr = format!("{}{}",argument,s);
 
     fs::create_dir_all(&dirstr).expect("Directory unable to be created");
     dirstr

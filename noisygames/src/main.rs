@@ -5,9 +5,12 @@ pub mod testbed;
 pub mod game;
 pub mod test_utilities;
 use crate::testbed::Config;
-use std::thread;
+//use std::thread;
+use std::env;
 use std::fs;
 use serde::Serialize;
+use threadpool::ThreadPool;
+
 
 #[derive(Clone,Serialize)]
 pub enum Strategies {
@@ -39,8 +42,22 @@ impl Strategy for Strategies {
 
 
 fn main() {
-    let num_strategies = vec![2, 2, 2, 2];
+    
+    let args: Vec<String> = env::args().collect();
+    let mut dirstr = test_utilities::build_datetime_folder("/tmp/test_runs/".to_string());
+    if args.len() > 1 {
+    	dirstr = test_utilities::build_datetime_folder(args[1].clone().to_string());
+    }
+    let num_players = 128 - 1; 
+    //let num_strategies = vec![2, 2, 2, 2];
+    let mut num_strategies = vec![2];
+    for _i in 0..num_players { // edited for the purpose of timing program, TODO recommend changeing in final product
+    	num_strategies.push(2);
+    }
+    println!("{}", num_strategies.len());
+    
     let round_lengths = vec![63, 77, 151, 151, 308];
+    
     //potential strategies for now are always defect, tit for tat, and grim trigger
     let a_mtx = vec![
         vec![3,0],
@@ -76,13 +93,35 @@ fn main() {
         d_strat,
     ];
     let players = testbed::generate_players(strat_types, num_strategies);
-    let dirstr = test_utilities::build_datetime_folder();
     let configs = testbed::generate_round_robin_configs(
         g, players, round_lengths, dirstr );
     
-    run_multithreaded_configs(configs);
+    run_multithreaded_configs_threadpool(configs);
 }
 
+
+fn run_multithreaded_configs_threadpool(mut configs: Vec<Config<Strategies,Strategies>>){
+    let num_workers = 30;
+    let pool = ThreadPool::new(num_workers);
+    
+    //run configs through the pool, record_config saves results
+    for _idx in 0..configs.len() {
+
+        //let tx = tx.clone();
+        let tmp_config = configs.pop().unwrap();
+	pool.execute(move || {
+            //pool_job(tmp_config);
+            let out_configs = run_instance(tmp_config);
+            record_configs(out_configs);
+            //tx.send(1).expect("panic during threadpool execution");          
+        });
+    }
+    //assert_eq!(rx.iter().take(configs.len()).fold(0, |a,b| a+b), configs.len());
+    pool.join();
+}
+
+
+/*
 fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
 
     let mut threads = Vec::new();
@@ -103,7 +142,7 @@ fn run_multithreaded_configs(mut configs: Vec<Config<Strategies,Strategies>>){
     for thread in threads {
         thread.join().unwrap()
     }
-}
+} */
 
 fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {
     let s = &configs[0].location;
@@ -115,7 +154,7 @@ fn record_configs<T:Serialize,U:Serialize>(configs: Vec<Config<T,U>>) {
         let run_dir = format!("{}round{}play_num{}.json", group_dir, &configs[0].num_round_lengths[idx], idx);
         let j = serde_json::to_string(&configs[idx]).unwrap();
 
-        println!("{}", &run_dir);
+        //println!("{}", &run_dir);
 
         fs::write(run_dir, j).expect("Unable to write file");
     }
